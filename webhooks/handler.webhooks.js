@@ -12,13 +12,13 @@ export const receiveWebhook = async (req, res) => {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    console.log('🔐 Verification attempt:', { mode, token, challenge });
+    console.log('Verification attempt:', { mode, token, challenge });
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('✅ Webhook verified by Meta');
+      console.log('Webhook verified by Meta');
       return res.status(200).send(challenge);
     } else {
-      console.log('❌ Webhook verification failed');
+      console.log('Webhook verification failed');
       console.log('Expected token:', VERIFY_TOKEN);
       console.log('Received token:', token);
       return res.sendStatus(403);
@@ -26,14 +26,14 @@ export const receiveWebhook = async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    console.log('📥 Incoming WhatsApp message:', JSON.stringify(req.body, null, 2));
+    console.log('Incoming WhatsApp message:', JSON.stringify(req.body, null, 2));
     
     try {
       const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
-      console.log('🔍 Extracted entry:', JSON.stringify(entry, null, 2));
+      console.log('Extracted entry:', JSON.stringify(entry, null, 2));
       
       if (entry?.messages) {
-        console.log('📩 Processing messages...');
+        console.log('Processing messages...');
         await handleIncomingMessage(entry);
       } else {
         console.log('⚠️ No messages found in entry');
@@ -41,7 +41,7 @@ export const receiveWebhook = async (req, res) => {
       
       res.sendStatus(200);
     } catch (err) {
-      console.error('❌ Webhook error:', err);
+      console.error('Webhook error:', err);
       console.error('Stack trace:', err.stack);
       res.sendStatus(500);
     }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://graph.facebook.com/v22.0';
+const BASE_URL = process.env.BASE_URL;
 
 export const sendTextMessage = async(to, body) => {
   try {

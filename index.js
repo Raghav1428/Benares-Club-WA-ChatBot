@@ -6,8 +6,6 @@ import authRoutes from './routes/auth.routes.js'
 import feedbackRoutes from './routes/feedback.routes.js'
 
 dotenv.config();
-console.log("✅ TOKEN length:", process.env.WHATSAPP_TOKEN?.length);
-console.log("✅ PHONE_NUMBER_ID:", process.env.PHONE_NUMBER_ID);
 
 const app = express();
 app.use(express.json());

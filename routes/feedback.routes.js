@@ -4,22 +4,6 @@ import { authMiddleware } from '../middlewares/auth.middlewares.js';
 
 const router = express.Router();
 
-/**
- * GET /api/feedback
- * Get all feedback with optional filters
- * Query parameters:
- * - fromPhone: Filter by phone number
- * - category: Filter by category
- * - processed: Filter by processed status (true/false)
- * - hasMedia: Filter records with/without media (true/false)
- * - dateFrom: Filter from date (YYYY-MM-DD)
- * - dateTo: Filter to date (YYYY-MM-DD)
- * - search: Search in caption text
- * - limit: Limit number of results (default: 50)
- * - offset: Offset for pagination (default: 0)
- * - sortBy: Sort field (default: 'created_at')
- * - sortOrder: Sort order 'asc' or 'desc' (default: 'desc')
- */
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const filters = {
@@ -36,7 +20,6 @@ router.get('/', authMiddleware, async (req, res) => {
       sortOrder: req.query.sortOrder
     };
 
-    // Remove undefined values
     Object.keys(filters).forEach(key => {
       if (filters[key] === undefined) {
         delete filters[key];
@@ -60,7 +43,7 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in GET /feedback:', error);
+    console.error('Route error in GET /feedback:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -68,10 +51,6 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * GET /api/feedback/stats
- * Get feedback statistics
- */
 router.get('/stats', authMiddleware, async (req, res) => {
   try {
     const result = await FeedbackController.getFeedbackStats();
@@ -89,7 +68,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in GET /feedback/stats:', error);
+    console.error('Route error in GET /feedback/stats:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -97,10 +76,6 @@ router.get('/stats', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * GET /api/feedback/categories
- * Get unique categories
- */
 router.get('/categories', authMiddleware, async (req, res) => {
   try {
     const result = await FeedbackController.getCategories();
@@ -118,7 +93,7 @@ router.get('/categories', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in GET /feedback/categories:', error);
+    console.error('Route error in GET /feedback/categories:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -126,10 +101,6 @@ router.get('/categories', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * GET /api/feedback/phones
- * Get unique phone numbers
- */
 router.get('/phones',authMiddleware, async (req, res) => {
   try {
     const result = await FeedbackController.getPhoneNumbers();
@@ -147,7 +118,7 @@ router.get('/phones',authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in GET /feedback/phones:', error);
+    console.error('Route error in GET /feedback/phones:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -155,10 +126,6 @@ router.get('/phones',authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * GET /api/feedback/:id
- * Get feedback by ID
- */
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -178,7 +145,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in GET /feedback/:id:', error);
+    console.error('Route error in GET /feedback/:id:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -186,11 +153,6 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * PUT /api/feedback/:id/processed
- * Update feedback processed status
- * Body: { processed: boolean }
- */
 router.put('/:id/processed', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -227,7 +189,7 @@ router.put('/:id/processed', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in PUT /feedback/:id/processed:', error);
+    console.error('Route error in PUT /feedback/:id/processed:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -235,10 +197,6 @@ router.put('/:id/processed', authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/feedback/:id
- * Delete feedback by ID
- */
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
@@ -255,7 +213,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('❌ Route error in DELETE /feedback/:id:', error);
+    console.error('Route error in DELETE /feedback/:id:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'

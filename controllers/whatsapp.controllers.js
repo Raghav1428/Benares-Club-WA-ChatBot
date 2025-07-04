@@ -2,6 +2,7 @@ import axios from 'axios';
 import { sendTextMessage, sendTemplateMessage, notify } from '../services/whatsapp.services.js';
 import { getSession, setSession, clearSession } from '../utils/session.utils.js';
 import { saveToSupabase, uploadToSupabaseStorage } from '../supabase/functions.supabase.js';
+import { getOptinStatus, setOptinStatus } from '../utils/optin.utils.js';
 
 const hasAllRequiredData = (s) =>
   s.name && s.membershipNumber && s.category && s.suggestion;
@@ -12,6 +13,16 @@ export const handleIncomingMessage = async (entry) => {
   if (message.from_me) return;
 
   let session = getSession(from) || {};
+
+  const optinStatus = getOptinStatus(from);
+
+  if (optinStatus !== 'yes') {
+    if (session.lastTemplate !== 'opt_in') {
+      await sendTemplateMessage(from, 'opt_in');
+      setSession(from, { ...session, lastTemplate: 'opt_in' });
+    }
+    return;
+  }
 
   if (session.updatedAt && Date.now() - session.updatedAt > 600000) {
     clearSession(from);
@@ -50,7 +61,7 @@ export const handleIncomingMessage = async (entry) => {
 
     if (!session.category) return;
 
-    if (!session.suggestion && session.lastTemplate === 'describe_issue') {
+    if (!session.suggestion && session.lastTemplate === 'select') {
       setSession(from, { ...session, suggestion: text, lastTemplate: 'image_upload' });
       return await sendTemplateMessage(from, 'image_upload');
     }
@@ -102,11 +113,24 @@ export const handleIncomingMessage = async (entry) => {
     const payload = message.button.payload;
     const lastTemplate = session.lastTemplate;
 
+    if (lastTemplate === 'opt_in') {
+      if (payload === 'Yes') {
+        setOptinStatus(from, 'yes');
+        await sendTextMessage(from, "Thanks for opting in. Let's get started!");
+      } else if (payload === 'No') {
+        setOptinStatus(from, 'no');
+        await sendTextMessage(from, "We respect your choice. You won't receive further messages.");
+        clearSession(from);
+        return;
+      }
+      return;
+    }
+
     if (['Upkeep & Maintenance', 'Others'].includes(payload)) {
       setSession(from, {
         ...session,
         category: payload,
-        lastTemplate: 'describe_issue',
+        lastTemplate: 'select',
       });
       await sendTextMessage(from, `Please describe the issue related to ${payload.toLowerCase()}.`);
       return;
@@ -144,7 +168,7 @@ export const handleIncomingMessage = async (entry) => {
   }
 };
 
-const BASE_URL = 'https://graph.facebook.com/v22.0';
+const BASE_URL = process.env.BASE_URL;
 
 const getMediaUrl = async (mediaId) => {
   try {
@@ -168,11 +192,11 @@ const getMediaUrl = async (mediaId) => {
       throw new Error('No URL found in response');
     }
 
-    console.log('✅ Media URL fetched successfully');
+    console.log('Media URL fetched successfully');
     return response.data.url;
     
   } catch (err) {
-    console.error('❌ Error fetching media URL:', {
+    console.error('Error fetching media URL:', {
       mediaId,
       status: err.response?.status,
       statusText: err.response?.statusText,
@@ -195,7 +219,7 @@ const getMediaUrl = async (mediaId) => {
 const downloadMedia = async (url, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`📥 Downloading media (attempt ${attempt}/${retries})`);
+      console.log(`Downloading media (attempt ${attempt}/${retries})`);
       
       const response = await axios.get(url, {
         responseType: 'arraybuffer',
@@ -205,11 +229,11 @@ const downloadMedia = async (url, retries = 3) => {
         },
       });
 
-      console.log('✅ Media downloaded successfully');
+      console.log('Media downloaded successfully');
       return Buffer.from(response.data, 'binary');
       
     } catch (err) {
-      console.error(`❌ Download attempt ${attempt} failed:`, err.message);
+      console.error(`Download attempt ${attempt} failed:`, err.message);
       
       if (attempt === retries) {
         throw new Error(`Failed to download media after ${retries} attempts: ${err.message}`);

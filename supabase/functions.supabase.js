@@ -10,7 +10,7 @@ export const saveToSupabase = async ({
   suggestion,
 }) => {
   if (!from || !name || !membershipNumber || !suggestion) {
-    console.error("❌ Missing required fields in feedback.");
+    console.error("Missing required fields in feedback.");
     return;
   }
 
@@ -27,8 +27,8 @@ export const saveToSupabase = async ({
   const { data, error } = await supabase.from('feedback').insert([payload]);
 
   if (error) {
-    console.error('❌ Supabase insert error:', error);
-    console.debug('🔍 Payload:', payload);
+    console.error('Supabase insert error:', error);
+    console.debug('Payload:', payload);
   } else {
     console.log('✅ Saved to Supabase:', data);
   }
@@ -36,11 +36,10 @@ export const saveToSupabase = async ({
 
 export const uploadToSupabaseStorage = async (fileName, buffer) => {
   try {
-    const BUCKET_NAME = 'feedback-images'; // Make sure this matches your bucket name
+    const BUCKET_NAME = 'feedback-images';
     
     console.log(`📤 Uploading file: ${fileName} to bucket: ${BUCKET_NAME}`);
     
-    // Upload the file
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(fileName, buffer, {
@@ -50,13 +49,12 @@ export const uploadToSupabaseStorage = async (fileName, buffer) => {
       });
 
     if (error) {
-      console.error('❌ Upload error:', error);
+      console.error('Upload error:', error);
       throw error;
     }
 
     console.log('✅ File uploaded successfully:', data);
 
-    // Get the public URL
     const { data: urlData } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(fileName);
@@ -69,7 +67,7 @@ export const uploadToSupabaseStorage = async (fileName, buffer) => {
     return urlData.publicUrl;
 
   } catch (error) {
-    console.error('❌ Failed to upload to Supabase Storage:', error);
+    console.error('Failed to upload to Supabase Storage:', error);
     throw new Error(`Storage upload failed: ${error.message}`);
   }
 };

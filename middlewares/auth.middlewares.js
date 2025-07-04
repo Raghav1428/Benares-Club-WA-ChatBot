@@ -15,7 +15,6 @@ export const authMiddleware = async (req, res, next) => {
             return res.status(401).json({ message: "Unauthorized - Invalid Token" });
         }
 
-        // Query user from Supabase
         const { data: user, error } = await supabase
             .from('users')
             .select('id, email, last_login, created_at')

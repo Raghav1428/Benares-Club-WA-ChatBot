@@ -80,7 +80,7 @@ export class FeedbackController {
         }
       };
     } catch (error) {
-      console.error('❌ Controller error in getAllFeedback:', error);
+      console.error('Controller error in getAllFeedback:', error);
       return {
         success: false,
         error: error.message,
@@ -122,7 +122,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in getFeedbackById:', error);
+      console.error('Controller error in getFeedbackById:', error);
       return {
         success: false,
         error: error.message,
@@ -164,7 +164,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in updateProcessedStatus:', error);
+      console.error('Controller error in updateProcessedStatus:', error);
       return {
         success: false,
         error: error.message,
@@ -183,7 +183,6 @@ export class FeedbackController {
       if (!id) throw new Error('Feedback ID is required');
       if (!userId) throw new Error('User ID is required');
 
-      // 1. Get user role
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('role')
@@ -199,7 +198,6 @@ export class FeedbackController {
         };
       }
 
-      // 2. Proceed with deletion
       const { data, error } = await supabase
         .from('feedback')
         .delete()
@@ -216,7 +214,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in deleteFeedback:', error);
+      console.error('Controller error in deleteFeedback:', error);
       return {
         success: false,
         error: error.message,
@@ -231,14 +229,13 @@ export class FeedbackController {
    */
   static async getFeedbackStats() {
     try {
-      // Get total count
+
       const { count: totalCount, error: totalError } = await supabase
         .from('feedback')
         .select('*', { count: 'exact', head: true });
 
       if (totalError) throw totalError;
 
-      // Get processed count
       const { count: processedCount, error: processedError } = await supabase
         .from('feedback')
         .select('*', { count: 'exact', head: true })
@@ -246,7 +243,6 @@ export class FeedbackController {
 
       if (processedError) throw processedError;
 
-      // Get records with media count
       const { count: mediaCount, error: mediaError } = await supabase
         .from('feedback')
         .select('*', { count: 'exact', head: true })
@@ -254,7 +250,6 @@ export class FeedbackController {
 
       if (mediaError) throw mediaError;
 
-      // Get category breakdown
       const { data: categoryData, error: categoryError } = await supabase
         .from('feedback')
         .select('category')
@@ -280,7 +275,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in getFeedbackStats:', error);
+      console.error('Controller error in getFeedbackStats:', error);
       return {
         success: false,
         error: error.message,
@@ -309,7 +304,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in getCategories:', error);
+      console.error('Controller error in getCategories:', error);
       return {
         success: false,
         error: error.message,
@@ -337,7 +332,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in getPhoneNumbers:', error);
+      console.error('Controller error in getPhoneNumbers:', error);
       return {
         success: false,
         error: error.message,
@@ -362,7 +357,7 @@ export class FeedbackController {
       if (processed) {
         updateFields.processed_by = userId;
       } else {
-        updateFields.processed_by = null; // Optional: clear the processed_by if unprocessed
+        updateFields.processed_by = null;
       }
 
       const { data, error } = await supabase
@@ -381,7 +376,7 @@ export class FeedbackController {
       };
 
     } catch (error) {
-      console.error('❌ Controller error in updateProcessedStatus:', error);
+      console.error('Controller error in updateProcessedStatus:', error);
       return {
         success: false,
         error: error.message,

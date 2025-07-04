@@ -10,7 +10,6 @@ export const login = async (req, res) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        // Get user from Supabase
         const { data: user, error } = await supabase
             .from('users')
             .select('*')
@@ -21,25 +20,21 @@ export const login = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials" });
         }
 
-        // Direct password comparison (not recommended for production)
         if (password !== user.password) {
             return res.status(401).json({ message: "Invalid credentials" });
         }
         
-        // Update last_login timestamp
         await supabase
             .from('users')
             .update({ last_login: new Date().toISOString() })
             .eq('id', user.id);
 
-        // Generate JWT token
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             process.env.JWT_SECRET_KEY,
             { expiresIn: '15m' }
         );
 
-        // Return response without password
         const { password: _, ...userWithoutPassword } = user;
         
         res.status(200).json({
