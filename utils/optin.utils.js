@@ -1,5 +1,7 @@
 import fs from 'fs';
-const OPTIN_FILE = '../optins.json';
+import path from 'path';
+
+const OPTIN_FILE = path.resolve(process.cwd(), 'optins.json');
 
 let optinMap = {};
 try {
@@ -10,10 +12,16 @@ try {
 }
 
 export const getOptinStatus = (phone) => {
-  return optinMap[phone]; 
+  console.log('Checking for optin status');
+  return optinMap[phone];
 };
 
 export const setOptinStatus = (phone, status) => {
   optinMap[phone] = status;
-  fs.writeFileSync(OPTIN_FILE, JSON.stringify(optinMap, null, 2));
+  try {
+    fs.writeFileSync(OPTIN_FILE, JSON.stringify(optinMap, null, 2));
+    console.log(`✅ Optin status saved for ${phone}: ${status}`);
+  } catch (err) {
+    console.error('❌ Failed to write optins.json:', err.message);
+  }
 };

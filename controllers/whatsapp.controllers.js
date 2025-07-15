@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { sendTextMessage, sendTemplateMessage, notify } from '../services/whatsapp.services.js';
+import { sendTextMessage, sendTemplateMessage, getMediaUrl, downloadMedia } from '../services/whatsapp.services.js';
 import { getSession, setSession, clearSession } from '../utils/session.utils.js';
-import { saveToSupabase, uploadToSupabaseStorage } from '../supabase/functions.supabase.js';
-import { getOptinStatus, setOptinStatus } from '../utils/optin.utils.js';
+import { saveToSupabase, uploadToSupabaseStorage, getOptinStatus, setOptinStatus } from '../supabase/functions.supabase.js';
 
 const hasAllRequiredData = (s) =>
   s.name && s.membershipNumber && s.category && s.suggestion;
@@ -14,21 +13,13 @@ export const handleIncomingMessage = async (entry) => {
 
   let session = getSession(from) || {};
 
-  const optinStatus = getOptinStatus(from);
-
-  if (optinStatus !== 'yes') {
-    if (session.lastTemplate !== 'opt_in') {
-      await sendTemplateMessage(from, 'opt_in');
-      setSession(from, { ...session, lastTemplate: 'opt_in' });
-    }
-    return;
-  }
-
+  // Session timeout check (10 minutes)
   if (session.updatedAt && Date.now() - session.updatedAt > 600000) {
     clearSession(from);
     session = {};
   }
 
+  // Rate limiting check
   if (session.lastMessageAt && Date.now() - session.lastMessageAt < 1000) return;
   setSession(from, { ...session, lastMessageAt: Date.now(), updatedAt: Date.now() });
 
@@ -39,9 +30,55 @@ export const handleIncomingMessage = async (entry) => {
     return;
   }
 
+  // Check opt-in status first
+  if (!session.optinChecked) {
+    const optinStatus = await getOptinStatus(from);
+    session.optinStatus = optinStatus;
+    session.optinChecked = true;
+    setSession(from, session);
+
+    if (optinStatus === 'no') {
+      // Send opt-in template
+      await sendTemplateMessage(from, 'opt_in'); // Make sure you have this template
+      return;
+    }
+  }
+
+  // Handle opt-in response
+  if (session.optinStatus === 'no' && type === 'button') {
+    const payload = message.button.payload;
+    
+    if (payload === 'Yes') {
+      await setOptinStatus(from, 'yes');
+      session.optinStatus = 'yes';
+      setSession(from, session);
+      
+      // Start the main flow
+      await sendTextMessage(from, 'Thank you for opting in!');
+      await sendTextMessage(from, 'Greetings from *Benares Club*!');
+      await sendTextMessage(from, 'Please enter your *name*.');
+      setSession(from, { ...session, lastTemplate: 'get_name' });
+      return;
+    }
+    
+    if (payload === 'No') {
+      await setOptinStatus(from, 'no');
+      await sendTextMessage(from, `Thank you. You will not receive further messages. If you wish to submit feedbacks please *opt in*`);
+      clearSession(from);
+      return;
+    }
+  }
+
+  // If user hasn't opted in, don't proceed with main flow
+  if (session.optinStatus === 'no') {
+    await sendTextMessage(from, 'Please opt-in to continue using our services.');
+    return;
+  }
+
+  // Main chat flow starts here (only if user has opted in)
   if (!session.name && type === 'text' && session.lastTemplate !== 'get_name') {
     await sendTextMessage(from, 'Greetings from *Benares Club*!');
-    await sendTextMessage(from, 'Please enter you *name*.');
+    await sendTextMessage(from, 'Please enter your *name*.');
     setSession(from, { ...session, lastTemplate: 'get_name' });
     return;
   }
@@ -49,9 +86,16 @@ export const handleIncomingMessage = async (entry) => {
   if (type === 'text') {
     const text = message.text.body.trim();
 
+    if (text.toLowerCase() === 'stop') {
+      await setOptinStatus(from, 'no');
+      await sendTextMessage(from, `We respect your choice. You won't receive further messages and will not be able to submit feedbacks until you *opt in*.`);
+      clearSession(from);
+      return;
+    }
+
     if (!session.name && session.lastTemplate === 'get_name') {
       setSession(from, { ...session, name: text, lastTemplate: 'get_membership_no' });
-      return await sendTextMessage(from, 'Please enter you *membership number*.');
+      return await sendTextMessage(from, 'Please enter your *membership number*.');
     }
 
     if (!session.membershipNumber && session.lastTemplate === 'get_membership_no') {
@@ -61,7 +105,7 @@ export const handleIncomingMessage = async (entry) => {
 
     if (!session.category) return;
 
-    if (!session.suggestion && session.lastTemplate === 'select') {
+    if (!session.suggestion && session.lastTemplate === 'describe_issue') {
       setSession(from, { ...session, suggestion: text, lastTemplate: 'image_upload' });
       return await sendTemplateMessage(from, 'image_upload');
     }
@@ -96,7 +140,6 @@ export const handleIncomingMessage = async (entry) => {
           suggestion: session.suggestion,
         });
         await sendTextMessage(from, "Thank you, your feedback has been recorded successfully.");
-        await notify(from, session.name, session.membershipNumber);
         clearSession(from);
       } else {
         await sendTextMessage(from, "Got your image. Please type a short description of the issue.");
@@ -113,24 +156,11 @@ export const handleIncomingMessage = async (entry) => {
     const payload = message.button.payload;
     const lastTemplate = session.lastTemplate;
 
-    if (lastTemplate === 'opt_in') {
-      if (payload === 'Yes') {
-        setOptinStatus(from, 'yes');
-        await sendTextMessage(from, "Thanks for opting in. Let's get started!");
-      } else if (payload === 'No') {
-        setOptinStatus(from, 'no');
-        await sendTextMessage(from, "We respect your choice. You won't receive further messages.");
-        clearSession(from);
-        return;
-      }
-      return;
-    }
-
     if (['Upkeep & Maintenance', 'Others'].includes(payload)) {
       setSession(from, {
         ...session,
         category: payload,
-        lastTemplate: 'select',
+        lastTemplate: 'describe_issue',
       });
       await sendTextMessage(from, `Please describe the issue related to ${payload.toLowerCase()}.`);
       return;
@@ -154,92 +184,15 @@ export const handleIncomingMessage = async (entry) => {
           suggestion: session.suggestion,
         });
         await sendTextMessage(from, "Thank you, your feedback has been recorded successfully.");
-        await notify(from, session.name, session.membershipNumber);
         clearSession(from);
       } else {
         await sendTextMessage(from, "Missing some info. Let's restart.");
         clearSession(from);
         await sendTextMessage(from, 'Greetings from *Benares Club*!');
-        await sendTextMessage(from, 'Please enter you *name*.');
+        await sendTextMessage(from, 'Please enter your *name*.');
         setSession(from, { lastTemplate: 'get_name' });
       }
       return;
-    }
-  }
-};
-
-const BASE_URL = process.env.BASE_URL;
-
-const getMediaUrl = async (mediaId) => {
-  try {
-    if (!process.env.WHATSAPP_TOKEN) {
-      throw new Error('WHATSAPP_ACCESS_TOKEN environment variable not set');
-    }
-
-    console.log(`🔍 Fetching media URL for ID: ${mediaId}`);
-    
-    const response = await axios.get(
-      `${BASE_URL}/${mediaId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        },
-        timeout: 5000,
-      }
-    );
-
-    if (!response.data || !response.data.url) {
-      throw new Error('No URL found in response');
-    }
-
-    console.log('Media URL fetched successfully');
-    return response.data.url;
-    
-  } catch (err) {
-    console.error('Error fetching media URL:', {
-      mediaId,
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      error: err.response?.data || err.message,
-      code: err.code
-    });
-
-    if (err.response?.status === 401 || err.response?.data?.error?.code === 190) {
-      throw new Error('Access token is invalid or expired. Please refresh your token.');
-    } else if (err.response?.status === 404) {
-      throw new Error('Media not found. The media may have expired.');
-    } else if (err.code === 'ECONNABORTED') {
-      throw new Error('Request timeout. Please try again.');
-    }
-    
-    throw new Error(`Unable to fetch media URL: ${err.message}`);
-  }
-};
-
-const downloadMedia = async (url, retries = 3) => {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      console.log(`Downloading media (attempt ${attempt}/${retries})`);
-      
-      const response = await axios.get(url, {
-        responseType: 'arraybuffer',
-        timeout: 30000,
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        },
-      });
-
-      console.log('Media downloaded successfully');
-      return Buffer.from(response.data, 'binary');
-      
-    } catch (err) {
-      console.error(`Download attempt ${attempt} failed:`, err.message);
-      
-      if (attempt === retries) {
-        throw new Error(`Failed to download media after ${retries} attempts: ${err.message}`);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
     }
   }
 };
