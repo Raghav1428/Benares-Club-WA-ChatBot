@@ -170,7 +170,7 @@ export const getDailyFeedbackDetails = async (date) => {
 
     const { data, error } = await supabase
       .from('feedback')
-      .select('name, category, suggestion, created_at')
+      .select('name, membership_number, category, suggestion, created_at')
       .gte('created_at', start)
       .lt('created_at', end)
       .order('created_at', { ascending: false });

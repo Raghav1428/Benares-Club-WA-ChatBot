@@ -28,7 +28,6 @@ const formatTime = (date) => {
   });
 };
 
-// Generate HTML email content
 const generateEmailHTML = (feedbackCount, feedbackDetails, date) => {
   const formattedDate = formatDate(date);
   
@@ -41,6 +40,7 @@ const generateEmailHTML = (feedbackCount, feedbackDetails, date) => {
           <tr style="background-color: #f5f5f5;">
             <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Time</th>
             <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Name</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Membership No.</th>
             <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Category</th>
             <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Suggestion</th>
           </tr>
@@ -50,6 +50,7 @@ const generateEmailHTML = (feedbackCount, feedbackDetails, date) => {
             <tr>
               <td style="border: 1px solid #ddd; padding: 12px;">${formatTime(feedback.created_at)}</td>
               <td style="border: 1px solid #ddd; padding: 12px;">${feedback.name}</td>
+              <td style="border: 1px solid #ddd; padding: 12px;">${feedback.membership_number}</td>
               <td style="border: 1px solid #ddd; padding: 12px;">${feedback.category}</td>
               <td style="border: 1px solid #ddd; padding: 12px; max-width: 300px; word-wrap: break-word;">${feedback.suggestion}</td>
             </tr>
