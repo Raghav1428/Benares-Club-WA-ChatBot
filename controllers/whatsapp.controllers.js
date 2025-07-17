@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { sendTextMessage, sendTemplateMessage, getMediaUrl, downloadMedia } from '../services/whatsapp.services.js';
 import { getSession, setSession, clearSession } from '../utils/session.utils.js';
 import { saveToSupabase, uploadToSupabaseStorage, getOptinStatus, setOptinStatus } from '../supabase/functions.supabase.js';
@@ -13,13 +12,11 @@ export const handleIncomingMessage = async (entry) => {
 
   let session = getSession(from) || {};
 
-  // Session timeout check (10 minutes)
   if (session.updatedAt && Date.now() - session.updatedAt > 600000) {
     clearSession(from);
     session = {};
   }
 
-  // Rate limiting check
   if (session.lastMessageAt && Date.now() - session.lastMessageAt < 1000) return;
   setSession(from, { ...session, lastMessageAt: Date.now(), updatedAt: Date.now() });
 
@@ -30,7 +27,6 @@ export const handleIncomingMessage = async (entry) => {
     return;
   }
 
-  // Check opt-in status first
   if (!session.optinChecked) {
     const optinStatus = await getOptinStatus(from);
     session.optinStatus = optinStatus;
@@ -38,13 +34,11 @@ export const handleIncomingMessage = async (entry) => {
     setSession(from, session);
 
     if (optinStatus === 'no') {
-      // Send opt-in template
-      await sendTemplateMessage(from, 'opt_in'); // Make sure you have this template
+      await sendTemplateMessage(from, 'opt_in'); 
       return;
     }
   }
 
-  // Handle opt-in response
   if (session.optinStatus === 'no' && type === 'button') {
     const payload = message.button.payload;
     
@@ -52,8 +46,7 @@ export const handleIncomingMessage = async (entry) => {
       await setOptinStatus(from, 'yes');
       session.optinStatus = 'yes';
       setSession(from, session);
-      
-      // Start the main flow
+
       await sendTextMessage(from, 'Thank you for opting in!');
       await sendTextMessage(from, 'Greetings from *Benares Club*!');
       await sendTextMessage(from, 'Please enter your *name*.');
@@ -69,13 +62,11 @@ export const handleIncomingMessage = async (entry) => {
     }
   }
 
-  // If user hasn't opted in, don't proceed with main flow
   if (session.optinStatus === 'no') {
     await sendTextMessage(from, 'Please opt-in to continue using our services.');
     return;
   }
 
-  // Main chat flow starts here (only if user has opted in)
   if (!session.name && type === 'text' && session.lastTemplate !== 'get_name') {
     await sendTextMessage(from, 'Greetings from *Benares Club*!');
     await sendTextMessage(from, 'Please enter your *name*.');

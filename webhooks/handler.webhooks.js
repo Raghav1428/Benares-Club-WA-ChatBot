@@ -26,7 +26,6 @@ export const receiveWebhook = async (req, res) => {
   }
 
   if (req.method === 'POST') {
-    console.log('Incoming WhatsApp message:', JSON.stringify(req.body, null, 2));
     
     try {
       const entry = req.body?.entry?.[0]?.changes?.[0]?.value;

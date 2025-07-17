@@ -179,49 +179,73 @@ export class FeedbackController {
    * @param {string} userId - User ID of the one attempting deletion
    */
   static async deleteFeedback(id, userId) {
-    try {
-      if (!id) throw new Error('Feedback ID is required');
-      if (!userId) throw new Error('User ID is required');
+  try {
+    if (!id) throw new Error('Feedback ID is required');
+    if (!userId) throw new Error('User ID is required');
 
-      const { data: user, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
-      
-      if (userError) throw userError;
-      if (!user || user.role !== 'admin') {
-        return {
-          success: false,
-          error: 'Unauthorized: Only admin can delete feedback',
-          data: null
-        };
-      }
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
 
-      const { data, error } = await supabase
-        .from('feedback')
-        .delete()
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return {
-        success: true,
-        data,
-        message: 'Feedback deleted successfully'
-      };
-
-    } catch (error) {
-      console.error('Controller error in deleteFeedback:', error);
+    if (userError) throw userError;
+    if (!user || user.role !== 'admin') {
       return {
         success: false,
-        error: error.message,
+        error: 'Unauthorized: Only admin can delete feedback',
         data: null
       };
     }
+
+    const { data: feedback, error: fetchError } = await supabase
+      .from('feedback')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    if (feedback.media_url) {
+      const bucketName = 'feedback-images';
+      const filePath = feedback.media_url.split(`${bucketName}/`)[1];
+
+      if (filePath) {
+        const { error: storageError } = await supabase.storage
+          .from(bucketName)
+          .remove([filePath]);
+
+        if (storageError) {
+          console.warn('⚠️ Failed to delete image from Supabase storage:', storageError);
+        } else {
+        }
+      }
+    }
+
+    const { data: deleted, error: deleteError } = await supabase
+      .from('feedback')
+      .delete()
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (deleteError) throw deleteError;
+
+    return {
+      success: true,
+      data: deleted,
+      message: 'Feedback and associated image deleted successfully'
+    };
+
+  } catch (error) {
+    console.error('Controller error in deleteFeedback:', error);
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
   }
+}
 
 
   /**
