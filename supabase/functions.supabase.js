@@ -39,8 +39,6 @@ export const uploadToSupabaseStorage = async (fileName, buffer) => {
   try {
     const BUCKET_NAME = 'feedback-images';
     
-    console.log(`📤 Uploading file: ${fileName} to bucket: ${BUCKET_NAME}`);
-    
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(fileName, buffer, {
@@ -54,8 +52,6 @@ export const uploadToSupabaseStorage = async (fileName, buffer) => {
       throw error;
     }
 
-    console.log('File uploaded successfully:', data);
-
     const { data: urlData } = supabase.storage
       .from(BUCKET_NAME)
       .getPublicUrl(fileName);
@@ -64,7 +60,6 @@ export const uploadToSupabaseStorage = async (fileName, buffer) => {
       throw new Error('Failed to get public URL');
     }
 
-    console.log('Public URL generated:', urlData.publicUrl);
     return urlData.publicUrl;
 
   } catch (error) {
@@ -103,7 +98,7 @@ export const setOptinStatus = async (phone, status) => {
         console.error('Error setting opt-in status to yes:', error);
         throw error;
       }
-      console.log('✅ User opted in:', phone);
+      console.log('User opted in:', phone);
       return data;
     } else if (status === 'no') {
       const { data, error } = await supabase

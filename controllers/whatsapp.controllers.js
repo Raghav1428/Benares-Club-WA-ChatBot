@@ -67,13 +67,6 @@ export const handleIncomingMessage = async (entry) => {
     return;
   }
 
-  if (!session.name && type === 'text' && session.lastTemplate !== 'get_name') {
-    await sendTextMessage(from, 'Greetings from *Benares Club*!');
-    await sendTextMessage(from, 'Please enter your *name*.');
-    setSession(from, { ...session, lastTemplate: 'get_name' });
-    return;
-  }
-
   if (type === 'text') {
     const text = message.text.body.trim();
 
@@ -81,6 +74,13 @@ export const handleIncomingMessage = async (entry) => {
       await setOptinStatus(from, 'no');
       await sendTextMessage(from, `We respect your choice. You won't receive further messages and will not be able to submit feedbacks until you *opt in*.`);
       clearSession(from);
+      return;
+    }
+
+    if (!session.name && session.lastTemplate !== 'get_name') {
+      await sendTextMessage(from, 'Greetings from *Benares Club*!');
+      await sendTextMessage(from, 'Please enter your *name*.');
+      setSession(from, { ...session, lastTemplate: 'get_name' });
       return;
     }
 
@@ -97,7 +97,26 @@ export const handleIncomingMessage = async (entry) => {
     if (!session.category) return;
 
     if (!session.suggestion && session.lastTemplate === 'describe_issue') {
-      setSession(from, { ...session, suggestion: text, lastTemplate: 'image_upload' });
+      setSession(from, { ...session, suggestion: text });
+      
+      // If image is already uploaded, save the feedback immediately
+      if (session.imageUrl) {
+        await saveToSupabase({
+          from,
+          imageUrl: session.imageUrl,
+          caption: session.caption,
+          category: session.category,
+          name: session.name,
+          membershipNumber: session.membershipNumber,
+          suggestion: text,
+        });
+        await sendTextMessage(from, "Thank you, your feedback has been recorded successfully.");
+        clearSession(from);
+        return;
+      }
+      
+      // If no image uploaded yet, ask if they want to upload one
+      setSession(from, { ...session, lastTemplate: 'image_upload' });
       return await sendTemplateMessage(from, 'image_upload');
     }
 
@@ -134,6 +153,7 @@ export const handleIncomingMessage = async (entry) => {
         clearSession(from);
       } else {
         await sendTextMessage(from, "Got your image. Please type a short description of the issue.");
+        setSession(from, { ...session, lastTemplate: 'describe_issue' });
       }
     } catch (err) {
       console.error("Failed to handle image upload:", err.message);

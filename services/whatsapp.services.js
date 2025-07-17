@@ -20,7 +20,6 @@ export const sendTextMessage = async(to, body) => {
         }
       })
     });
-    console.log(response.data);
   } catch (err) {
     console.error('Error sending text:', err.response?.data || err.message);
   }
@@ -45,7 +44,6 @@ export const sendTemplateMessage = async(to, templateName) => {
         }
       })
     });
-    console.log(response.data);
   } catch (err) {
     console.error('Error sending template:', err.response?.data || err.message);
   }
@@ -73,11 +71,11 @@ export const getMediaUrl = async (mediaId) => {
       throw new Error('No URL found in response');
     }
 
-    console.log('✅ Media URL fetched successfully');
+    console.log('Media URL fetched successfully');
     return response.data.url;
     
   } catch (err) {
-    console.error('❌ Error fetching media URL:', {
+    console.error('Error fetching media URL:', {
       mediaId,
       status: err.response?.status,
       statusText: err.response?.statusText,
@@ -100,7 +98,7 @@ export const getMediaUrl = async (mediaId) => {
 export const downloadMedia = async (url, retries = 3) => {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`📥 Downloading media (attempt ${attempt}/${retries})`);
+      console.log(`Downloading media (attempt ${attempt}/${retries})`);
       
       const response = await axios.get(url, {
         responseType: 'arraybuffer',
@@ -114,7 +112,7 @@ export const downloadMedia = async (url, retries = 3) => {
       return Buffer.from(response.data, 'binary');
       
     } catch (err) {
-      console.error(`❌ Download attempt ${attempt} failed:`, err.message);
+      console.error(`Download attempt ${attempt} failed:`, err.message);
       
       if (attempt === retries) {
         throw new Error(`Failed to download media after ${retries} attempts: ${err.message}`);
