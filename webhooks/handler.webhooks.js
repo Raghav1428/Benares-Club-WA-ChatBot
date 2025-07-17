@@ -1,9 +1,6 @@
 import { handleIncomingMessage } from '../controllers/whatsapp.controllers.js';
 
 export const receiveWebhook = async (req, res) => {
-  console.log(`📨 Received ${req.method} request`);
-  console.log('🔍 Headers:', req.headers);
-  console.log('🔍 Query params:', req.query);
 
   if (req.method === 'GET') {
     const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_SECRET;
@@ -29,13 +26,9 @@ export const receiveWebhook = async (req, res) => {
     
     try {
       const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
-      console.log('Extracted entry:', JSON.stringify(entry, null, 2));
       
       if (entry?.messages) {
-        console.log('Processing messages...');
         await handleIncomingMessage(entry);
-      } else {
-        console.log('⚠️ No messages found in entry');
       }
       
       res.sendStatus(200);
