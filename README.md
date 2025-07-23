@@ -122,15 +122,15 @@ The **Benares Club WhatsApp Feedback Bot** is a comprehensive automated system d
 
 | Technology | Purpose | Version |
 |------------|---------|---------|
-| **Node.js** | Backend runtime | 18.x |
-| **Express.js** | Web framework | 4.x |
+| **Node.js** | Backend runtime | 22.13.1 |
+| **Express.js** | Web framework | 4.18.2 |
 | **Supabase** | Database & Storage | Latest |
 | **Docker** | Containerization | Latest |
 | **WhatsApp API** | Messaging interface | v22.0 |
-| **Luxon** | Date/time handling | 3.x |
-| **Nodemailer** | Email delivery | 6.x |
-| **node-cron** | Task scheduling | 3.x |
-| **JWT** | Authentication | 9.x |
+| **Luxon** | Date/time handling | 3.7.1 |
+| **Nodemailer** | Email delivery | 7.0.5 |
+| **node-cron** | Task scheduling | 4.2.1 |
+| **JWT** | Authentication | 9.0.2 |
 
 ---
 
@@ -165,6 +165,15 @@ All activities are logged with structured JSON format for easy analysis.
 
 - Meta WhatsApp Business API team
 - Benares Club for the opportunity
+
+---
+
+## ⚠️ License & Usage
+
+This project is **not open source**. The code is available publicly **only for review and demonstration purposes** (e.g., internship evaluation). Any form of **unauthorized use, redistribution, or modification is strictly prohibited**.
+
+To seek permission or clarification, contact [Benares Club](mailto:suggestion.bc@gmail.com).
+
 
 ---
 
